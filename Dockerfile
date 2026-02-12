@@ -12,8 +12,17 @@ EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
-#docker build -t storage-system-back .
-#docker run -d -p 8000:8000 --name storage-system-back
+# Билд
+# docker build -t storage-system-back .
 
+# Запуск на http://localhost:8000
+# docker run -d -p 8000:8000 --name storage-system-back storage-system-back
+
+# Запущенные контейнеры
 #docker ps
-#docker stop storage-system-back
+
+# Остановить контейнер
+#docker stop storage-system-front
+
+# Удалить контейнер
+#docker rm storage-system-front
