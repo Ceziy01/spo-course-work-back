@@ -1,6 +1,6 @@
 FROM python:3.13-slim
 
-WORKDIR /app
+WORKDIR /storage-system-back
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -12,8 +12,8 @@ EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
-#docker build -t app .
-#docker run -d -p 8000:8000 --name app
+#docker build -t storage-system-back .
+#docker run -d -p 8000:8000 --name storage-system-back
 
 #docker ps
 #docker stop storage-system-back
