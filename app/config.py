@@ -1,13 +1,17 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "STORAGE-SYSTEM"
     VERSION: str = "0.1.0"
 
-    DATABASE_URL: str = "sqlite:///./storage.db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
 
-    JWT_KEY: str = "2USE_OrIR8bGWUsNNou23s2Eq9-AWAEgR9sZTGoDZF4"
+    JWT_KEY: str = os.getenv("JWT_KEY")
     JWT_ALG: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
