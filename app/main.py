@@ -1,24 +1,30 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import auth, users
-from app.core.config import settings
+from fastapi import FastAPI, status, Depends, HTTPException
+import models
+from database import engine, SessionLocal
+from typing import Annotated
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+from pydantic import BaseModel
+import auth
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION
-)
+app = FastAPI()
+app.include_router(auth.router)
+models.Base.metadata.create_all(bind=engine)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
+db_dependency = Annotated[Session, Depends(get_db)]
 
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+'''@app.get("/", status_code=status.HTTP_200_OK)
+async def user(user: None, db: db_dependency):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Auth failed"
+        )
+    return {"user": user}'''

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "STORAGE-SYSTEM"
     VERSION: str = "0.1.0"
 
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/app_db"
+    DATABASE_URL: str = "sqlite:///./storage.db"
 
     JWT_KEY: str = "2USE_OrIR8bGWUsNNou23s2Eq9-AWAEgR9sZTGoDZF4"
     JWT_ALG: str = "HS256"
@@ -18,13 +18,5 @@ class Settings(BaseSettings):
     DB_ECHO: bool = False
 
     REDIS_URL: Optional[str] = None
-
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
-
-    model_config = {
-        "env_file": ".env",
-        "case_sensitive": True,
-        "extra": "ignore" 
-    }
-
+    
 settings = Settings()
