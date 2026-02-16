@@ -4,8 +4,6 @@ import models
 from database import engine, SessionLocal
 from typing import Annotated
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
-from pydantic import BaseModel
 import auth
 from auth import get_current_user
 
