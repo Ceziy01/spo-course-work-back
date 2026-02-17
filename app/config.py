@@ -14,4 +14,5 @@ class Settings(BaseSettings):
     JWT_ALG: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    FAKE_HASH: str = "$2b$12$KbQiVbF7z0J8yF8vYx9m7e7VYh3Y7V5W7y7V5W7y7V5W7y7V5W7y7"
 settings = Settings()
