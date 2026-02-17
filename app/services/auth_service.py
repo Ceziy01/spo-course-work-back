@@ -1,5 +1,6 @@
 from datetime import timedelta
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from models import Users
 from core.security import verify_password, hash_password, create_access_token
@@ -9,20 +10,33 @@ from config import settings
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(Users).filter(Users.username == username).first()
     if not user:
+        verify_password(password, settings.FAKE_HASH)
         return None
+    
     if not verify_password(password, user.hashed_password):
         return None
+    
     return user
 
 
 def create_user(username: str, password: str, is_admin: bool, db: Session):
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=400, 
+            detail="Password too short"
+            )
     user = Users(
         username=username,
         hashed_password=hash_password(password),
         is_admin=is_admin
     )
-    db.add(user)
-    db.commit()
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(400, "Username already exists")
     return user
 
 
