@@ -18,7 +18,6 @@ def get_db():
     finally:
         db.close()
 
-
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_bearer)],
     db: Annotated[Session, Depends(get_db)]

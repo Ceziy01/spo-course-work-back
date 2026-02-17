@@ -14,6 +14,7 @@ class Items(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
+    category = Column(String, unique=True, nullable=False)
     count = Column(Integer, nullable=False)
     price = Column(Integer, nullable=False)
     on_sale = Column(Boolean, default=True)
