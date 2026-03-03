@@ -2,8 +2,11 @@ from pydantic import BaseModel
 
 class CreateUserRequest(BaseModel):
     username: str
+    first_name: str
+    last_name: str
+    email: str
     password: str
-    is_admin: bool
+    role: str
     
 class Token(BaseModel):
     access_token: str
@@ -11,4 +14,7 @@ class Token(BaseModel):
     
 class UsersMe(BaseModel):
     username: str
-    is_admin: bool
+    first_name: str
+    last_name: str
+    email: str
+    role: str

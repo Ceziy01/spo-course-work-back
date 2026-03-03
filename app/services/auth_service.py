@@ -2,7 +2,7 @@ from datetime import timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from models import Users
+from db.models.user import Users
 from core.security import verify_password, hash_password, create_access_token
 from config import settings
 
@@ -19,7 +19,7 @@ def authenticate_user(username: str, password: str, db: Session):
     return user
 
 
-def create_user(username: str, password: str, is_admin: bool, db: Session):
+def create_user(username: str, first_name: str, last_name: str, email: str, password: str, role: str, db: Session):
     if len(password) < 8:
         raise HTTPException(
             status_code=400, 
@@ -27,14 +27,17 @@ def create_user(username: str, password: str, is_admin: bool, db: Session):
             )
     user = Users(
         username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
         hashed_password=hash_password(password),
-        is_admin=is_admin
+        role=role
     )
     try:
         db.add(user)
         db.commit()
         db.refresh(user)
-    except IntegrityError:
+    except InterruptedError:
         db.rollback()
         raise HTTPException(400, "Username already exists")
     return user

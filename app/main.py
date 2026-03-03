@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from database import engine
-import models
+from core.database import engine
+import db.models.user
 
 from api import auth, admin
 
@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-models.Base.metadata.create_all(bind=engine)
+db.models.user.Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
 app.include_router(admin.router)

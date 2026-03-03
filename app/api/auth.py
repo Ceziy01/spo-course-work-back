@@ -17,7 +17,7 @@ def register(
     request: CreateUserRequest,
     db: Annotated[Session, Depends(get_db)]
 ):
-    create_user(request.username, request.password, False, db)
+    create_user(request.username, request.first_name, request.last_name, request.email, request.password, request.role, db)
     return {"message": "User created"}
 
 
@@ -40,5 +40,8 @@ def login(
 def me(user=Depends(get_current_user)):
     return {
         "username": user.username,
-        "is_admin": user.is_admin
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "role": user.role.value
     }

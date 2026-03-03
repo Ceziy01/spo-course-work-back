@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from core.dependencies import require_admin, get_db
 from schemas.auth import CreateUserRequest
 from services.auth_service import create_user
-from models import Users
+from db.models.user import Users
 
 router = APIRouter(prefix="/auth/admin", tags=["admin"])
 
@@ -19,7 +19,7 @@ def admin_create_user(
     db: Annotated[Session, Depends(get_db)],
     admin: Annotated[Users, Depends(require_admin)]
 ):
-    create_user(request.username, request.password, request.is_admin, db)
+    create_user(request.username, request.first_name, request.last_name, request.email, request.password, request.role, db)
     return {"message": "User created"}
 
 @router.get("/users")
@@ -29,7 +29,7 @@ def all_users(
 ):
     users = db.query(Users).all()
     return [
-        {"id": u.id, "username": u.username, "is_admin": u.is_admin}
+        {"id": u.id, "username": u.username, "first_name": u.first_name, "last_name": u.last_name, "email": u.email, "role": u.role.value}
         for u in users
     ]
 

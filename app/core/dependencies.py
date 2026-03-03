@@ -6,8 +6,8 @@ from starlette import status
 from sqlalchemy.orm import Session
 
 from config import settings
-from database import SessionLocal
-from models import Users
+from core.database import SessionLocal
+from db.models.user import Users
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
@@ -40,7 +40,7 @@ async def get_current_user(
 
 
 def require_admin(user: Annotated[Users, Depends(get_current_user)]):
-    if not user.is_admin:
+    if user.role.value != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins only"
