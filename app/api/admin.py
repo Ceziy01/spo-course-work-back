@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from core.dependencies import require_admin, get_db
-from schemas.auth import CreateUserRequest
+from schemas.auth import CreateUserRequest, UpdateUserRequest
 from services.auth_service import create_user
 from db.models.user import Users
 
@@ -50,3 +50,60 @@ def delete_user(
     db.commit()
 
     return {"message": "User deleted"}
+
+@router.patch("/users/{user_id}")
+def admin_update_user(
+    user_id: int,
+    request: UpdateUserRequest,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[Users, Depends(require_admin)]
+):
+    user = db.query(Users).filter(Users.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if request.username is not None:
+        existing = db.query(Users).filter(Users.username == request.username, Users.id != user_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        user.username = request.username
+
+    if request.first_name is not None:
+        user.first_name = request.first_name
+
+    if request.last_name is not None:
+        user.last_name = request.last_name
+
+    if request.email is not None:
+        existing = db.query(Users).filter(Users.email == request.email, Users.id != user_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already exists")
+        user.email = request.email
+
+    if request.role is not None:
+        user.role = request.role
+
+    db.commit()
+    db.refresh(user)
+    return {"message": "User updated"}
+
+from schemas.auth import ResetPasswordRequest
+from core.security import hash_password
+
+@router.post("/users/{user_id}/reset-password")
+def admin_reset_password(
+    user_id: int,
+    request: ResetPasswordRequest,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[Users, Depends(require_admin)]
+):
+    if len(request.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password too short (min 8 characters)")
+
+    user = db.query(Users).filter(Users.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+
+    return {"message": "Password reset successfully"}
