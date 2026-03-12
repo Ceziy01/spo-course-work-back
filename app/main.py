@@ -5,7 +5,6 @@ from slowapi.errors import RateLimitExceeded
 
 from core.database import engine
 from db.models import *
-
 from api import auth, admin, warehouses, categories, items
 
 app = FastAPI()
