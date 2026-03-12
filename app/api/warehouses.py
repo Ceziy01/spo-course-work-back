@@ -1,0 +1,73 @@
+from typing import Annotated, List
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from core.dependencies import get_db, require_any_authenticated, require_admin_or_warehouse_keeper
+from db.models.user import Users
+from db.models.warehouse import Warehouse
+from schemas.warehouse import WarehouseCreate, WarehouseUpdate, WarehouseResponse
+
+router = APIRouter(prefix="/warehouses", tags=["warehouses"])
+
+@router.get("/", response_model=List[WarehouseResponse])
+def list_warehouses(
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_any_authenticated)]
+):
+    return db.query(Warehouse).all()
+
+@router.post("/", response_model=WarehouseResponse, status_code=201)
+def create_warehouse(
+    data: WarehouseCreate,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+):
+    existing = db.query(Warehouse).filter(Warehouse.name == data.name).first()
+    if existing:
+        raise HTTPException(400, "Склад с таким названием уже существует")
+    warehouse = Warehouse(**data.model_dump())
+    db.add(warehouse)
+    db.commit()
+    db.refresh(warehouse)
+    return warehouse
+
+@router.patch("/{warehouse_id}", response_model=WarehouseResponse)
+def update_warehouse(
+    warehouse_id: int,
+    data: WarehouseUpdate,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+):
+    warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
+    if not warehouse:
+        raise HTTPException(404, "Склад не найден")
+    update_data = data.model_dump(exclude_unset=True)
+    if "name" in update_data:
+        existing = db.query(Warehouse).filter(
+            Warehouse.name == update_data["name"],
+            Warehouse.id != warehouse_id
+        ).first()
+        if existing:
+            raise HTTPException(400, "Склад с таким названием уже существует")
+    for field, value in update_data.items():
+        setattr(warehouse, field, value)
+    db.commit()
+    db.refresh(warehouse)
+    return warehouse
+
+@router.delete("/{warehouse_id}")
+def delete_warehouse(
+    warehouse_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+):
+    warehouse = db.query(Warehouse).filter(Warehouse.id == warehouse_id).first()
+    if not warehouse:
+        raise HTTPException(404, "Склад не найден")
+    from db.models.item import Item
+    items_count = db.query(Item).filter(Item.warehouse_id == warehouse_id).count()
+    if items_count:
+        raise HTTPException(400, "Нельзя удалить склад, на котором есть товары")
+    db.delete(warehouse)
+    db.commit()
+    return {"message": "Склад удалён"}

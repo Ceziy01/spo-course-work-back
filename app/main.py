@@ -4,9 +4,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from core.database import engine
-import db.models.user
-
-from api import auth, admin
+from db.models import *
+from api import auth, admin, warehouses, categories, items
 
 app = FastAPI()
 app.state.limiter = auth.limiter
@@ -20,7 +19,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-db.models.user.Base.metadata.create_all(bind=engine)
+user.Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(warehouses.router)
+app.include_router(categories.router)
+app.include_router(items.router)

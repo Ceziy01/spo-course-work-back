@@ -46,3 +46,11 @@ def require_admin(user: Annotated[Users, Depends(get_current_user)]):
             detail="Admins only"
         )
     return user
+
+def require_any_authenticated(user: Annotated[Users, Depends(get_current_user)]):
+    return user
+
+def require_admin_or_warehouse_keeper(user: Annotated[Users, Depends(get_current_user)]):
+    if user.role.value not in ["admin", "warehouse_keeper"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return user
