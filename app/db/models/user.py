@@ -2,7 +2,6 @@ from core.database import Base
 from enum import Enum
 from sqlalchemy import Column, Integer, String, Boolean, Enum as SqlEnum
 
-
 class UserRole(str, Enum):
     ADMIN = "admin"
     WAREHOUSE_KEEPER = "warehouse_keeper"
