@@ -14,9 +14,9 @@ CMD ["fastapi", "dev", "./app/main.py", "--port", "8000", "--host", "0.0.0.0"]
 
 # Билд
 # docker build -t storage-system-back .
-# docker run -d -p 8000:8000 --name storage-system-back storage-system-back
+
 # Запуск на http://localhost:8000
-# docker run -d -p 8000:8000 --name storage-system-back storage-system-back
+# docker run -d -p 8000:8000 --name storage-system-back storage-system-back 
 
 # Запущенные контейнеры
 #docker ps
