@@ -9,14 +9,14 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "/app/app"]
+CMD ["fastapi", "dev", "./app/main.py", "--port", "8000", "--host", "0.0.0.0"]
 
 
 # Билд
 # docker build -t storage-system-back .
-
+# docker run -d -p 8000:8000 --name storage-system-back storage-system-back
 # Запуск на http://localhost:8000
-# docker run -d -p 8000:8000 --name storage-system-back app
+# docker run -d -p 8000:8000 --name storage-system-back storage-system-back
 
 # Запущенные контейнеры
 #docker ps
