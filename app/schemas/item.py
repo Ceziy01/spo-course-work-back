@@ -11,6 +11,7 @@ class ItemBase(BaseModel):
     price: float
     category_id: int
     warehouse_id: int
+    image_url: Optional[str] = None
 
 class ItemCreate(ItemBase):
     pass
@@ -25,11 +26,13 @@ class ItemUpdate(BaseModel):
     price: Optional[float] = None
     category_id: Optional[int] = None
     warehouse_id: Optional[int] = None
+    image_url: Optional[str] = None
 
 class ItemResponse(ItemBase):
     id: int
     category_name: Optional[str] = None
     warehouse_name: Optional[str] = None
+    image_url: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -1,6 +1,7 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
+import shutil, uuid, os
 
 from core.dependencies import get_db, require_any_authenticated, require_admin_or_warehouse_keeper
 from db.models.user import Users
@@ -106,3 +107,15 @@ def delete_item(
     db.delete(item)
     db.commit()
     return {"message": "Товар удалён"}
+
+@router.post("/upload-image")
+def upload_image(file: UploadFile = File(...)):
+    ext = file.filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+
+    filepath = os.path.join("images", filename)
+
+    with open(filepath, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {"image_url": f"/images/{filename}"}
