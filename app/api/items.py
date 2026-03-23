@@ -9,6 +9,7 @@ from db.models.item import Item
 from db.models.warehouse import Warehouse
 from db.models.category import Category
 from schemas.item import ItemCreate, ItemUpdate, ItemResponse
+from services.search_service import ai_search
 
 router = APIRouter(prefix="/items", tags=["items"])
 
@@ -119,3 +120,46 @@ def upload_image(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     return {"image_url": f"/images/{filename}"}
+
+@router.get("/search/{query}", response_model=List[ItemResponse])
+def search_items(
+    query: str,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_any_authenticated)]
+):
+
+    items = db.query(Item).options(
+        joinedload(Item.category),
+        joinedload(Item.warehouse)
+    ).all()
+
+    goods = []
+
+    for item in items:
+        goods.append({
+            "id": item.id,
+            "name": item.name,
+            "category": item.category.name if item.category else ""
+        })
+
+    results = ai_search(query, goods)
+
+    item_ids = [r["item"]["id"] for r in results]
+
+    if not item_ids:
+        return []
+
+    matched_items = db.query(Item).options(
+        joinedload(Item.category),
+        joinedload(Item.warehouse)
+    ).filter(Item.id.in_(item_ids)).all()
+
+    response = []
+
+    for item in matched_items:
+        r = ItemResponse.model_validate(item)
+        r.category_name = item.category.name if item.category else None
+        r.warehouse_name = item.warehouse.name if item.warehouse else None
+        response.append(r)
+
+    return response
