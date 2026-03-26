@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from core.database import Base
+from sqlalchemy import func
+from db.models.order import Order, OrderStatus, OrderItem
 
 class CartItem(Base):
     __tablename__ = "cart_items"

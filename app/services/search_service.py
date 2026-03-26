@@ -99,18 +99,14 @@ def category_match_score(query, category):
     q = normalize(query)
     c = normalize(category)
 
-    # точное совпадение
     if q == c: return 1.0
 
-    # частичное совпадение
     if q in c or c in q: return 0.9
 
-    # fuzzy совпадение
     score = fuzz.partial_ratio(q, c) / 100
 
     if score > 0.7: return score
 
-    # совпадение слов
     q_words = set(q.split())
     c_words = set(c.split())
 

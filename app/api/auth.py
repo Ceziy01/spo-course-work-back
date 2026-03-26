@@ -5,9 +5,11 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from schemas.auth import Token, CreateUserRequest, UsersMe
+from schemas.auth import Token, CreateUserRequest, UsersMe, ChangePasswordRequest
 from core.dependencies import get_db, get_current_user
 from services.auth_service import authenticate_user, create_user, login_user
+from core.security import verify_password, hash_password
+from db.models.user import Users
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -45,3 +47,20 @@ def me(user=Depends(get_current_user)):
         "email": user.email,
         "role": user.role.value
     }
+    
+@router.patch("/users/me/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[Users, Depends(get_current_user)]
+):
+    if not verify_password(request.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Неверный старый пароль")
+    
+    if len(request.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Пароль должен быть не менее 8 символов")
+
+    current_user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    
+    return {"message": "Пароль успешно изменён"}

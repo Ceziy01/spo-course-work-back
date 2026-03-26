@@ -54,3 +54,13 @@ def require_admin_or_warehouse_keeper(user: Annotated[Users, Depends(get_current
     if user.role.value not in ["admin", "warehouse_keeper"]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return user
+
+def require_admin_or_sales_manager(user: Annotated[Users, Depends(get_current_user)]):
+    if user.role.value not in ["admin", "sales_manager"]:
+        raise HTTPException(status_code=403, detail="Требуются права администратора или менеджера по продажам")
+    return user
+
+def require_management_or_accountant_read_access(user: Annotated[Users, Depends(get_current_user)]):
+    if user.role.value not in ["admin", "sales_manager", "management", "accountant"]:
+        raise HTTPException(status_code=403, detail="Недостаточно прав для просмотра заказов")
+    return user

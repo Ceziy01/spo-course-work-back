@@ -6,6 +6,10 @@ from db.models.user import Users
 from db.models.item import Item
 from db.models.cart import CartItem
 from schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse
+from services.order_service import get_available_quantity
+from sqlalchemy import func
+from db.models.order import Order, OrderStatus, OrderItem
+from services.order_service import get_available_quantity
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -14,7 +18,10 @@ def add_to_cart(
     data: CartItemCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
-):
+):  
+    available = get_available_quantity(data.item_id, db)
+    if available < data.quantity:
+        raise HTTPException(400, "Недостаточно товара на складе с учётом активных заказов")
     item = db.query(Item).filter(Item.id == data.item_id).first()
     if not item: raise HTTPException(status_code=404, detail="Товар не найден")
 
@@ -81,6 +88,9 @@ def update_cart_item(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
 ):
+    available = get_available_quantity(item_id, db)
+    if available < data.quantity:
+        raise HTTPException(400, "Недостаточно товара на складе с учётом активных заказов")
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == current_user.id,
         CartItem.item_id == item_id
@@ -130,6 +140,41 @@ def checkout(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
 ):
+    # Получаем корзину
+    cart_items = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
+    if not cart_items:
+        raise HTTPException(400, "Корзина пуста")
+
+    # Проверяем доступность каждого товара
+    for ci in cart_items:
+        available = get_available_quantity(ci.item_id, db)
+        if available < ci.quantity:
+            raise HTTPException(400, f"Недостаточно товара '{ci.item.name}' на складе")
+
+    # Создаём заказ
+    total_price = 0.0
+    order = Order(user_id=current_user.id, status=OrderStatus.CREATED, total_price=0)
+    db.add(order)
+    db.flush()  # чтобы получить order.id
+
+    # Создаём позиции заказа
+    for ci in cart_items:
+        item = ci.item
+        price = item.price
+        order_item = OrderItem(
+            order_id=order.id,
+            item_id=ci.item_id,
+            quantity=ci.quantity,
+            price_at_time=price
+        )
+        db.add(order_item)
+        total_price += price * ci.quantity
+
+    order.total_price = total_price
+    db.commit()
+
+    # Очищаем корзину
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
+
     return None
