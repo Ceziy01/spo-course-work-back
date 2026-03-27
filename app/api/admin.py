@@ -6,6 +6,9 @@ from core.dependencies import require_admin, get_db
 from schemas.auth import CreateUserRequest, UpdateUserRequest
 from services.auth_service import create_user
 from db.models.user import Users
+from core.security import create_access_token
+from datetime import timedelta
+from config import settings
 
 router = APIRouter(prefix="/auth/admin", tags=["admin"])
 
@@ -107,3 +110,21 @@ def admin_reset_password(
     db.commit()
 
     return {"message": "Password reset successfully"}
+
+@router.post("/impersonate/{user_id}")
+def impersonate_user(
+    user_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    admin: Annotated[Users, Depends(require_admin)]
+):
+    user = db.query(Users).filter(Users.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    token = create_access_token(
+        username=user.username,
+        id=user.id,
+        exps=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return {"access_token": token, "token_type": "bearer"}

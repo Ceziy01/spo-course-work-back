@@ -11,7 +11,6 @@ class UserRole(str, Enum):
     PURCHASE_MANAGER = "purchase_manager"
     SALES_MANAGER = "sales_manager"
     ACCOUNTANT = "accountant"
-    SUPPLIER = "supplier"
 
 class Users(Base):
     __tablename__ = "users"

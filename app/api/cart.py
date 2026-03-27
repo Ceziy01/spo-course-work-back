@@ -140,24 +140,24 @@ def checkout(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
 ):
-    # Получаем корзину
+    
     cart_items = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
     if not cart_items:
         raise HTTPException(400, "Корзина пуста")
 
-    # Проверяем доступность каждого товара
+    
     for ci in cart_items:
         available = get_available_quantity(ci.item_id, db)
         if available < ci.quantity:
             raise HTTPException(400, f"Недостаточно товара '{ci.item.name}' на складе")
 
-    # Создаём заказ
+    
     total_price = 0.0
     order = Order(user_id=current_user.id, status=OrderStatus.CREATED, total_price=0)
     db.add(order)
-    db.flush()  # чтобы получить order.id
+    db.flush()  
 
-    # Создаём позиции заказа
+    
     for ci in cart_items:
         item = ci.item
         price = item.price
@@ -173,7 +173,7 @@ def checkout(
     order.total_price = total_price
     db.commit()
 
-    # Очищаем корзину
+    
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
 

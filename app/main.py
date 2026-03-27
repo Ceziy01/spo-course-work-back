@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from core.database import engine
 from db.models import *
-from api import auth, admin, warehouses, categories, items, cart, orders
+from api import auth, admin, warehouses, categories, items, cart, orders, suppliers, users, purchases
 
 app = FastAPI()
 app.state.limiter = auth.limiter
@@ -30,3 +30,6 @@ app.include_router(categories.router)
 app.include_router(items.router)
 app.include_router(cart.router)
 app.include_router(orders.router)
+app.include_router(suppliers.router)
+app.include_router(users.router)
+app.include_router(purchases.router)

@@ -11,7 +11,6 @@ from schemas.order import OrderResponse, OrderUpdate, OrderItemResponse
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
-
 def get_available_quantity(item_id: int, db: Session) -> float:
     """Возвращает доступное количество товара с учётом зарезервированных в заказах со статусом 'created'"""
     item = db.query(Item).filter(Item.id == item_id).first()
@@ -100,7 +99,6 @@ def update_order_status(
     old_status = order.status
     new_status = data.status
 
-    
     if new_status not in [s.value for s in OrderStatus]:
         raise HTTPException(400, "Недопустимый статус")
 
@@ -124,7 +122,6 @@ def update_order_status(
             items=items
         )
 
-    
     if new_status == OrderStatus.CONFIRMED.value and old_status == OrderStatus.CREATED.value:
         for oi in order.items:
             item = oi.item
@@ -137,7 +134,6 @@ def update_order_status(
     db.commit()
     db.refresh(order)
 
-    
     items = [
         OrderItemResponse(
             id=oi.id,
