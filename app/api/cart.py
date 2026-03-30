@@ -151,13 +151,11 @@ def checkout(
         if available < ci.quantity:
             raise HTTPException(400, f"Недостаточно товара '{ci.item.name}' на складе")
 
-    
     total_price = 0.0
     order = Order(user_id=current_user.id, status=OrderStatus.CREATED, total_price=0)
     db.add(order)
     db.flush()  
 
-    
     for ci in cart_items:
         item = ci.item
         price = item.price
@@ -173,7 +171,6 @@ def checkout(
     order.total_price = total_price
     db.commit()
 
-    
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()
 

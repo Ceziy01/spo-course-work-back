@@ -13,7 +13,7 @@ def get_customers(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
 ):
-    allowed_roles = [UserRole.ADMIN, UserRole.SALES_MANAGER, UserRole.MANAGEMENT, UserRole.ACCOUNTANT]
+    allowed_roles = [UserRole.ADMIN, UserRole.SALES_MANAGER, UserRole.PURCHASE_MANAGER, UserRole.MANAGEMENT, UserRole.ACCOUNTANT, UserRole.WAREHOUSE_KEEPER]
     if current_user.role not in allowed_roles:
         raise HTTPException(403, "Недостаточно прав")
     customers = db.query(Users).filter(Users.role == UserRole.CUSTOMER).all()
