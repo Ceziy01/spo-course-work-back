@@ -110,7 +110,10 @@ def delete_item(
     return {"message": "Товар удалён"}
 
 @router.post("/upload-image")
-def upload_image(file: UploadFile = File(...)):
+def upload_image( 
+    user: Annotated[Users, Depends(require_any_authenticated)],
+    file: UploadFile = File(...)
+):
     ext = file.filename.split(".")[-1]
     filename = f"{uuid.uuid4()}.{ext}"
 
