@@ -8,11 +8,18 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 MODEL_PATH = os.path.join(BASE_DIR, "../ai/ai_model.pkl")
 
-with open(MODEL_PATH, "rb") as f:
-    model_data = pickle.load(f)
+model = None
+vectorizer = None
 
-model = model_data["model"]
-vectorizer = model_data["vectorizer"]
+def load_model():
+    global model, vectorizer
+
+    if model is None:
+        with open(MODEL_PATH, "rb") as f:
+            model_data = pickle.load(f)
+
+        model = model_data["model"]
+        vectorizer = model_data["vectorizer"]
 
 def normalize(text: str):
     return text.lower().strip()
@@ -46,6 +53,7 @@ def build_brand_dict(goods):
     return brands
 
 def ai_search(query: str, goods: list, top_k: int | None = None):
+    load_model()
 
     BRANDS = build_brand_dict(goods)
     CATEGORIES = set(normalize(g["category"]) for g in goods)

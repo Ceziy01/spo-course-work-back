@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from core.dependencies import require_admin
 
 from schemas.auth import Token, CreateUserRequest, UsersMe, ChangePasswordRequest
 from core.dependencies import get_db, get_current_user
@@ -17,7 +18,8 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post("/", status_code=201)
 def register(
     request: CreateUserRequest,
-    db: Annotated[Session, Depends(get_db)]
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[Users, Depends(require_admin)]
 ):
     create_user(request.username, request.first_name, request.last_name, request.email, request.password, request.role, db)
     return {"message": "User created"}
