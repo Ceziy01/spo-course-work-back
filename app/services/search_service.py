@@ -5,7 +5,6 @@ from transliterate import translit
 from collections import Counter
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 MODEL_PATH = os.path.join(BASE_DIR, "../ai/ai_model.pkl")
 
 model = None
@@ -23,7 +22,6 @@ def load_model():
 
 def normalize(text: str):
     return text.lower().strip()
-
 
 def normalize_with_translit(text: str):
     original = normalize(text)
@@ -43,7 +41,6 @@ def build_brand_dict(goods):
         candidates.append(first_word)
 
     counter = Counter(candidates)
-
     brands = set()
 
     for brand, count in counter.items():

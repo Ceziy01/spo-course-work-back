@@ -9,7 +9,6 @@ from config import settings
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(Users).filter(Users.username == username).first()
     if not user:
-        verify_password(password, settings.FAKE_HASH)
         return None
     
     if not verify_password(password, user.hashed_password):

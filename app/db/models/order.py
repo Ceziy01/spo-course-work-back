@@ -8,6 +8,8 @@ class OrderStatus(str, enum.Enum):
     CREATED = "created"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
+    ON_THE_WAY = "on_the_way"
+    DELIVERED = "delivered"
 
 class Order(Base):
     __tablename__ = "orders"

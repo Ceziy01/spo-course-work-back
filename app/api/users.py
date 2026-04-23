@@ -19,6 +19,7 @@ def get_customers(
     customers = db.query(Users).filter(Users.role == UserRole.CUSTOMER).all()
     return [
         UsersMe(
+            id=c.id,
             username=c.username,
             first_name=c.first_name,
             last_name=c.last_name,

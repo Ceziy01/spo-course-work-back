@@ -106,8 +106,14 @@ def change_purchase_status(
         order.status = PurchaseStatus.INITIATED
         db.commit()
         return {"message": "Статус изменён на 'Инициирована'"}
-
     
+    if status == PurchaseStatus.CANCELLED.value:
+        if not can_edit(current_user):
+            raise HTTPException(403, "Недостаточно прав")
+        order.status = PurchaseStatus.CANCELLED
+        db.commit()
+        return {"message": "Статус изменён на 'Отменено'"}
+
     raise HTTPException(400, "Используйте /complete для завершения закупки")
 
 @router.post("/{order_id}/complete", status_code=200)
@@ -125,8 +131,6 @@ def complete_purchase(
         raise HTTPException(404, "Закупка не найдена")
     if order.status == PurchaseStatus.COMPLETED:
         raise HTTPException(400, "Закупка уже завершена")
-
-    
     
     existing = db.query(Item).filter(Item.article == data.article).first()
     if existing:
@@ -153,7 +157,6 @@ def complete_purchase(
     )
     db.add(new_item)
 
-    
     order.status = PurchaseStatus.COMPLETED
     db.commit()
 

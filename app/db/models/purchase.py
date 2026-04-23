@@ -8,6 +8,7 @@ class PurchaseStatus(str, enum.Enum):
     CREATED = "created"
     INITIATED = "initiated"
     COMPLETED = "completed"
+    CANCELLED = "cancelled"
 
 class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
