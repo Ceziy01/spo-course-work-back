@@ -1,11 +1,13 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from core.dependencies import get_db, require_any_authenticated, require_admin_or_purchase_manager, require_admin_or_purchase_manager
+from core.dependencies import get_db, require_any_authenticated, require_admin_or_purchase_manager
 from db.models.user import Users
 from db.models.suppliers import Supplier
 from schemas.supplier import SupplierCreate, SupplierUpdate, SupplierResponse
+from db.models.activity_log import ActionType
+from services.activity_log import log_action
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -16,11 +18,13 @@ def list_suppliers(
 ):
     return db.query(Supplier).all()
 
+
 @router.post("/", response_model=SupplierResponse, status_code=201)
 def create_supplier(
     data: SupplierCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_purchase_manager)]
+    user: Annotated[Users, Depends(require_admin_or_purchase_manager)],
+    req: Request = None
 ):
     existing = db.query(Supplier).filter(Supplier.name == data.name).first()
     if existing:
@@ -29,14 +33,24 @@ def create_supplier(
     db.add(supplier)
     db.commit()
     db.refresh(supplier)
+
+    log_action(
+        db, user, ActionType.SUPPLIER_CREATED,
+        entity_type="supplier", entity_id=supplier.id,
+        entity_name=supplier.name,
+        ip_address=req.client.host if req else None
+    )
+
     return supplier
+
 
 @router.patch("/{supplier_id}", response_model=SupplierResponse)
 def update_supplier(
     supplier_id: int,
     data: SupplierUpdate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_purchase_manager)]
+    user: Annotated[Users, Depends(require_admin_or_purchase_manager)],
+    req: Request = None
 ):
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:
@@ -49,21 +63,45 @@ def update_supplier(
         ).first()
         if existing:
             raise HTTPException(400, "Поставщик с таким названием уже существует")
+
+    changes = {}
     for field, value in update_data.items():
+        old_val = getattr(supplier, field, None)
+        if old_val != value:
+            changes[field] = {"old": old_val, "new": value}
         setattr(supplier, field, value)
+
     db.commit()
     db.refresh(supplier)
+
+    log_action(
+        db, user, ActionType.SUPPLIER_UPDATED,
+        entity_type="supplier", entity_id=supplier.id,
+        entity_name=supplier.name,
+        ip_address=req.client.host if req else None
+    )
+
     return supplier
+
 
 @router.delete("/{supplier_id}")
 def delete_supplier(
     supplier_id: int,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_purchase_manager)]
+    user: Annotated[Users, Depends(require_admin_or_purchase_manager)],
+    req: Request = None
 ):
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
     if not supplier:
         raise HTTPException(404, "Поставщик не найден")
+
+    log_action(
+        db, user, ActionType.SUPPLIER_DELETED,
+        entity_type="supplier", entity_id=supplier.id,
+        entity_name=supplier.name,
+        ip_address=req.client.host if req else None
+    )
+
     db.delete(supplier)
     db.commit()
     return {"message": "Поставщик удалён"}

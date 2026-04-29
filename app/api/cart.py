@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from core.dependencies import get_db, get_current_user
 from db.models.user import Users
@@ -9,7 +9,8 @@ from schemas.cart import CartItemCreate, CartItemUpdate, CartItemResponse
 from services.order_service import get_available_quantity
 from sqlalchemy import func
 from db.models.order import Order, OrderStatus, OrderItem
-from services.order_service import get_available_quantity
+from db.models.activity_log import ActionType
+from services.activity_log import log_action
 
 router = APIRouter(prefix="/cart", tags=["cart"])
 
@@ -18,20 +19,22 @@ def add_to_cart(
     data: CartItemCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[Users, Depends(get_current_user)]
-):  
+):
     available = get_available_quantity(data.item_id, db)
     if available < data.quantity:
         raise HTTPException(400, "Недостаточно товара на складе с учётом активных заказов")
     item = db.query(Item).filter(Item.id == data.item_id).first()
-    if not item: raise HTTPException(status_code=404, detail="Товар не найден")
+    if not item:
+        raise HTTPException(status_code=404, detail="Товар не найден")
 
-    if item.quantity < data.quantity: raise HTTPException(status_code=400, detail="Недостаточно товара на складе")
+    if item.quantity < data.quantity:
+        raise HTTPException(status_code=400, detail="Недостаточно товара на складе")
 
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == current_user.id,
         CartItem.item_id == data.item_id
     ).first()
-    
+
     if cart_item:
         cart_item.quantity += data.quantity
         if cart_item.quantity <= 0:
@@ -45,7 +48,7 @@ def add_to_cart(
             quantity=data.quantity
         )
         db.add(cart_item)
-    
+
     db.commit()
     db.refresh(cart_item)
 
@@ -68,7 +71,7 @@ def get_cart(
     cart_items = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
     result = []
     for ci in cart_items:
-        item = ci.item 
+        item = ci.item
         result.append({
             "id": ci.id,
             "item_id": item.id,
@@ -97,16 +100,16 @@ def update_cart_item(
     ).first()
     if not cart_item:
         raise HTTPException(status_code=404, detail="Товар не найден в корзине")
-    
+
     if data.quantity <= 0:
         db.delete(cart_item)
         db.commit()
         raise HTTPException(status_code=204, detail="Товар удалён из корзины")
-    
+
     cart_item.quantity = data.quantity
     db.commit()
     db.refresh(cart_item)
-    
+
     item = cart_item.item
     return {
         "id": cart_item.id,
@@ -138,14 +141,13 @@ def delete_cart_item(
 @router.post("/checkout", status_code=204)
 def checkout(
     db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[Users, Depends(get_current_user)]
+    current_user: Annotated[Users, Depends(get_current_user)],
+    req: Request = None
 ):
-    
     cart_items = db.query(CartItem).filter(CartItem.user_id == current_user.id).all()
     if not cart_items:
         raise HTTPException(400, "Корзина пуста")
 
-    
     for ci in cart_items:
         available = get_available_quantity(ci.item_id, db)
         if available < ci.quantity:
@@ -154,8 +156,9 @@ def checkout(
     total_price = 0.0
     order = Order(user_id=current_user.id, status=OrderStatus.CREATED, total_price=0)
     db.add(order)
-    db.flush()  
+    db.flush()
 
+    items_info = []
     for ci in cart_items:
         item = ci.item
         price = item.price
@@ -167,9 +170,17 @@ def checkout(
         )
         db.add(order_item)
         total_price += price * ci.quantity
+        items_info.append({"name": item.name, "quantity": ci.quantity, "price": price})
 
     order.total_price = total_price
     db.commit()
+
+    log_action(
+        db, current_user, ActionType.ORDER_CREATED,
+        entity_type="order", entity_id=order.id,
+        entity_name=f"Заказ #{order.id}",
+        ip_address=req.client.host if req and req.client else None
+    )
 
     db.query(CartItem).filter(CartItem.user_id == current_user.id).delete()
     db.commit()

@@ -1,13 +1,16 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from core.dependencies import get_db, require_any_authenticated, require_admin_or_warehouse_keeper
 from db.models.user import Users
 from db.models.category import Category
 from schemas.category import CategoryCreate, CategoryUpdate, CategoryResponse
+from db.models.activity_log import ActionType
+from services.activity_log import log_action
 
 router = APIRouter(prefix="/categories", tags=["categories"])
+
 
 @router.get("/", response_model=List[CategoryResponse])
 def list_categories(
@@ -16,11 +19,13 @@ def list_categories(
 ):
     return db.query(Category).all()
 
+
 @router.post("/", response_model=CategoryResponse, status_code=201)
 def create_category(
     data: CategoryCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)],
+    req: Request = None
 ):
     existing = db.query(Category).filter(Category.name == data.name).first()
     if existing:
@@ -29,14 +34,24 @@ def create_category(
     db.add(category)
     db.commit()
     db.refresh(category)
+
+    log_action(
+        db, user, ActionType.CATEGORY_CREATED,
+        entity_type="category", entity_id=category.id,
+        entity_name=category.name,
+        ip_address=req.client.host if req else None
+    )
+
     return category
+
 
 @router.patch("/{category_id}", response_model=CategoryResponse)
 def update_category(
     category_id: int,
     data: CategoryUpdate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)],
+    req: Request = None
 ):
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
@@ -52,18 +67,32 @@ def update_category(
         if existing:
             raise HTTPException(status_code=400, detail="Категория с таким названием уже существует")
 
+    changes = {}
     for field, value in update_data.items():
+        old_val = getattr(category, field, None)
+        if old_val != value:
+            changes[field] = {"old": old_val, "new": value}
         setattr(category, field, value)
 
     db.commit()
     db.refresh(category)
+
+    log_action(
+        db, user, ActionType.CATEGORY_UPDATED,
+        entity_type="category", entity_id=category.id,
+        entity_name=category.name,
+        ip_address=req.client.host if req else None
+    )
+
     return category
+
 
 @router.delete("/{category_id}")
 def delete_category(
     category_id: int,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)]
+    user: Annotated[Users, Depends(require_admin_or_warehouse_keeper)],
+    req: Request = None
 ):
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
@@ -74,8 +103,15 @@ def delete_category(
     if items_count:
         raise HTTPException(
             status_code=400,
-            detail="Нельзя удалить категорию, к которой привязаны товары. Сначала переназначьте или удалите товары."
+            detail="Нельзя удалить категорию, к которой привязаны товары."
         )
+
+    log_action(
+        db, user, ActionType.CATEGORY_DELETED,
+        entity_type="category", entity_id=category.id,
+        entity_name=category.name,
+        ip_address=req.client.host if req else None
+    )
 
     db.delete(category)
     db.commit()
