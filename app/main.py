@@ -13,16 +13,11 @@ app.state.limiter = auth.limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.mount("/images", StaticFiles(directory="images"), name="images")
 
-
-
 import traceback
 import sys
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-# ... ваш текущий код создания app ...
-
-# Глобальный перехват ВСЕХ необработанных исключений
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     print("=== UNHANDLED EXCEPTION ===", file=sys.stderr)
@@ -32,11 +27,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal Server Error"}
     )
     
-    
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://185.61.77.236:3000", "http://185.61.77.236:1411"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
