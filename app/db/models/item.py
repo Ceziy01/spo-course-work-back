@@ -15,6 +15,7 @@ class Item(Base):
     price = Column(Float, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=False)
+    image_url = Column(String, nullable=False, default="/images/default.png")
 
     category = relationship("Category")
     warehouse = relationship("Warehouse")

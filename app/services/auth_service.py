@@ -6,18 +6,15 @@ from db.models.user import Users
 from core.security import verify_password, hash_password, create_access_token
 from config import settings
 
-
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(Users).filter(Users.username == username).first()
     if not user:
-        verify_password(password, settings.FAKE_HASH)
         return None
     
     if not verify_password(password, user.hashed_password):
         return None
     
     return user
-
 
 def create_user(username: str, first_name: str, last_name: str, email: str, password: str, role: str, db: Session):
     if len(password) < 8:
